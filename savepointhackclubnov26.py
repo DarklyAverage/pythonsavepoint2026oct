@@ -14,8 +14,12 @@
 #i should fix the behemoth thing after if i have time
 #multiplayer? very ambitious but well....
 
-#dgfhjmk,myrh5ujgukitjyhgkuli gamebreaking teleport bug after the rework im crin
+
+#pyinstaller and venv stuff fixing NOWWWWW
+#ASAP
+
 #whatever im shipping this ill fix after
+#rytuiytygjhkitu67iy8o
 
 def __init__(self, x=0, y=0, role="teleporter", hp=5,
         alive=True, stunned=False, stun_timer=0,
@@ -1081,17 +1085,17 @@ class Game:
                     for x, y in worm_cells(enemy)
                 )
             )
-            if is_adjacent(enemy, self.player) or worm_attacking:
-                teleporter_attacking = (
+            teleporter_attacking = (
                 enemy.role == "teleporter"
                 and max(
                     abs(enemy.x - self.player.x),
                     abs(enemy.y - self.player.y),
                 ) == 1
             )
-            if is_adjacent(enemy, self.player) or worm_attacking or teleporter_attacking:
+            if is_adjacent(enemy, self.player) or worm_attacking:
                 continue
-
+            if teleporter_attacking:
+                continue
             if enemy.role == "basic":
                 move_basic_enemy(enemy, self.player, self.game_map, self.enemies)
             elif enemy.role == "teleporter":
@@ -1351,5 +1355,3 @@ if __name__ == "__main__":
     game = Game()
     game.run()
 
-
-#why is this so hard
