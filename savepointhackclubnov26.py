@@ -1,25 +1,8 @@
 #continuing the one from jame gam in savepoint becaue i didnt get all the mechanics i wanted
 #what to add:
-#rounds system that changes enemies
-#multiple upgrades and classes and tools and stuff
-# teleporter rework since this one is lame
-#better maps and such
-# enemy health bar and fighting mechanics
-#interactable objects and such
-#better text in between levels and so on
-#how do i make player heal between rounds
-#bro what is this S enemy i forgot all about them
-#change names of classes and abilities to match theme
-# also the behemoth ocunts down twice a turn instead of once
-#i should fix the behemoth thing after if i have time
-#multiplayer? very ambitious but well....
+#interactable objects and such and items
+#^ still didn't get to do this but whatevs
 
-
-#pyinstaller and venv stuff fixing NOWWWWW
-#ASAP
-
-#whatever im shipping this ill fix after
-#rytuiytygjhkitu67iy8o
 
 def __init__(self, x=0, y=0, role="teleporter", hp=5,
         alive=True, stunned=False, stun_timer=0,
@@ -67,7 +50,7 @@ def update(self):
 def create_enemies():
     return [
         Enemy(x=5, y=5, role="teleporter"),
-        Enemy(x=28, y=5, role="S", spawn_cooldown=5)
+        Enemy(x=28, y=5, role="spawner", spawn_cooldown=5)
     ]
 
 def teleport_enemy(enemy, player, game_map, enemies):
@@ -106,7 +89,7 @@ def teleport_enemy(enemy, player, game_map, enemies):
     return False
 
 def spawnenemy(enemy, game_map, enemies, player=None):
-    if enemy.role != "S" or not enemy.alive or enemy.stunned:
+    if enemy.role != "spawner" or not enemy.alive or enemy.stunned:
         return False
 
     if player is None:
@@ -239,17 +222,7 @@ def burrow_worm(enemy):
     enemy.burrow_timer = 2
     enemy.burrow_cooldown = 5
 
-def move_worm(enemy, player, game_map, enemies):
-    if enemy.role != "worm" or not enemy.alive or enemy.stunned:
-        return False
-    if enemy.burrowed:
-        enemy.burrow_timer -= 1
-        if enemy.burrow_timer > 0:
-            return False
-        candidates = [
-            (player.x + dx, player.y + dy)
-            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))
-        ]
+
 def move_worm(enemy, player, game_map, enemies):
     if enemy.role != "worm" or not enemy.alive or enemy.stunned:
         return False
@@ -302,7 +275,7 @@ def update_enemies(enemies, player, game_map):
             continue
         if enemy.role == "teleporter":
             teleport_enemy(enemy, player, game_map, enemies)
-        elif enemy.role == "S":
+        elif enemy.role == "spawner":
             spawnenemy(enemy, game_map, enemies, player)
         elif enemy.role == "spawned":
             move_slow_enemy(enemy, player, game_map, enemies)
@@ -315,7 +288,7 @@ def draw_enemies(screen, enemies):
 
         if enemy.role == "teleporter":
             screen[enemy.y][enemy.x] = "T"
-        elif enemy.role == "S":
+        elif enemy.role == "spawner":
             screen[enemy.y][enemy.x] = "S"
         elif enemy.role == "spawned":
             screen[enemy.y][enemy.x] = "e"
@@ -369,25 +342,26 @@ PLAYER_DASH_COLOR = color(HEX_COLORS["white"])
 WALL_COLOR = color(HEX_COLORS["dark_grey"])
 GOAL_COLOR = color(HEX_COLORS["yellow"])
 PREVIEW_COLOR = color(HEX_COLORS["purple"])
-CONFETTI_AREA_COLOR = color(HEX_COLORS["red"])
+confetti_cannon_AREA_COLOR = color(HEX_COLORS["red"])
 STUNNED_COLOR = color(HEX_COLORS["white"])
 
 CHARACTER_LOADOUTS = {
-    "scout": {
-        "display_name": "Scout",
-        "weapon": "Twin daggers",
-        "max_hp": 4,
-        "damage": 1,
-        "ability": "vroomvroom",
-        "description": "Fast and fragile. Vroomvroom lets you dash two squares.",
+    "zoomie": {
+        "display_name": "Zoomie",
+        "weapon": "Twin sticks",
+        "max_hp": 2,
+        "damage": 4,
+        "ability": "zoomies",
+        "description": "Fast and fragile. Zoomies lets you dash two squares.",
     },
-    "guardian": {
-        "display_name": "Guardian",
-        "weapon": "Heavy hammer",
+    #naming stuff to fit iwth this theme is annoyign
+    "bonker": {
+        "display_name": "Bonker",
+        "weapon": "Heavy gloves",
         "max_hp": 8,
         "damage": 2,
-        "ability": "confetti",
-        "description": "Tough and powerful. Confetti stuns nearby enemies.",
+        "ability": "confetti cannon",
+        "description": "Tough and powerful. The confetti cannon stuns nearby enemies.",
     },
     "medic": {
         "display_name": "Medic",
@@ -399,11 +373,11 @@ CHARACTER_LOADOUTS = {
     },
 }
 
-DIRECTIONS ={
-    "w" or "W": (0,-1),
-    "a" or "A": (-1,0),
-    "s" or "S": (0,1),
-    "d" or "D": (1,0)
+DIRECTIONS = {
+    "w": (0, -1),
+    "a": (-1, 0),
+    "s": (0, 1),
+    "d": (1, 0),
 }
 
 
@@ -420,7 +394,7 @@ class Player:
     damage: int = 1
     character_name: str = "Scout"
     #temporary character names for now
-    ability: str = "vroomvroom"
+    ability: str = "zoomies"
 
     playerequippedclass: Optional[str]= None
 
@@ -430,8 +404,8 @@ class Player:
     extra_moves: int=0
     last_message: str = ""
 
-    vroomvroom_available: bool = False
-    vroomvroom_cooldown: int = 0
+    zoomies_available: bool = False
+    zoomies_cooldown: int = 0
     dash_color_turns: int = 0
 
     stun_timer: int=0
@@ -450,8 +424,8 @@ class Player:
         self.move_history.append((dx,dy))
         return True
 
-    def use_vroomvroom(self,game_map, enemies=None):
-        if not self.vroomvroom_available:
+    def use_zoomies(self,game_map, enemies=None):
+        if not self.zoomies_available:
             return False
 
         dx,dy = get_movementdirection(input("Dash direction (w/a/s/d): "))
@@ -465,23 +439,23 @@ class Player:
             else:
                 break
         if moves:
-            self.vroomvroom_available = False
-            self.vroomvroom_cooldown = 4
+            self.zoomies_available = False
+            self.zoomies_cooldown = 4
             self.dash_color_turns = 2
             self.last_message = f"VROOM! Two squares in one turn! ({moves}/2)"
         return moves > 0
 
-    confetti_available: bool = True
-    confetti_cooldown: int = 0
-    confetti_range_visible: bool = False
+    confetti_cannon_available: bool = True
+    confetti_cannon_cooldown: int = 0
+    confetti_cannon_range_visible: bool = False
     second_wind_available: bool = False
 
     def use_confetti(self, game_map, enemies=None):
-        if not self.confetti_available:
-            self.last_message = "Confetti is recharging."
+        if not self.confetti_cannon_available:
+            self.last_message = "The confetti cannon is recharging."
             return False
         if not enemies:
-            self.last_message = "Confetti failed, no enemy near by"
+            self.last_message = "Confetti cannon failed: no enemy nearby."
             return False
 
         stunned_count = 0  
@@ -489,20 +463,28 @@ class Player:
             if not enemy.alive:
                 continue
 
-            if abs(enemy.x - self.x) <= 1 and abs(enemy.y - self.y) <= 1:
+            affected_cells = (
+                worm_cells(enemy)
+                if enemy.role == "worm"
+                else {(enemy.x, enemy.y)}
+            )
+            if any(
+                abs(x - self.x) <= 1 and abs(y - self.y) <= 1
+                for x, y in affected_cells
+            ):
                 enemy.stunned = True
                 enemy.stun_timer = 3
                 stunned_count += 1
 
         if stunned_count == 0:
-            self.last_message = "Confetti failed, no enemy in range"
+            self.last_message = "Confetti cannon failed: no enemy nearby."
             return False
 
-        self.confetti_available = False
-        self.confetti_cooldown = 8
-        self.confetti_range_visible = True
+        self.confetti_cannon_available = False
+        self.confetti_cannon_cooldown = 8
+        self.confetti_cannon_range_visible = True
         enemy_word = "enemy" if stunned_count == 1 else "enemies"
-        self.last_message = f"Confetti worked! Stunned {stunned_count} {enemy_word}."
+        self.last_message = f"Confetti cannon worked! Stunned {stunned_count} {enemy_word}."
         return True
     def use_second_wind(self):
         if self.ability != "second wind" or not self.second_wind_available:
@@ -522,7 +504,7 @@ class Enemy:
     x: int = 0
     y: int = 0
     role: str = "teleporter"
-    hp: int = 5
+    hp: int = 0
     alive:bool =True
     stunned: bool =False
     stun_timer: int = 0
@@ -546,13 +528,13 @@ class Enemy:
                 "spawned": 1,
                 "teleporter": 3,
                 "spawner": 4,
-                "S": 3,
                 "behemoth": float("inf"),
-                "worm":3
-
+                "worm": 3,
             }.get(self.role, 1)
 
     def take_push_damage(self, damage=1):
+        if self.role == "behemoth":
+            return False
         self.hp -= damage
         if self.hp <= 0:
             self.hp = 0
@@ -640,7 +622,7 @@ def teleport_enemy(enemy, player, game_map, enemies):
     return False
 
 def spawnenemy(enemy,game_map,enemies, player = None):
-    if not enemy.alive or enemy.stunned:
+    if enemy.role != "spawner" or not enemy.alive or enemy.stunned:
         return False
     if player is None:
         return False
@@ -666,10 +648,10 @@ def spawnenemy(enemy,game_map,enemies, player = None):
             continue
         enemies.append(Enemy(x=tx, y=ty, role="spawned"))
         spawned_any = True
-        return spawned_any
+    return spawned_any
     
 def move_slow_enemy(enemy, player, game_map, enemies):
-    if enemy.role != "spawned" or enemy.stunned:
+    if enemy.role != "spawned" or not enemy.alive or enemy.stunned:
         return False
     moves = []
     for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]:
@@ -697,9 +679,10 @@ def move_slow_enemy(enemy, player, game_map, enemies):
     return False
 
 class GameMap:
-    def __init__(self,width=WIDTH,height = HEIGHT):
+    def __init__(self, width=WIDTH, height=HEIGHT, theme_index=0):
         self.width = width
         self.height = height
+        self.theme_index = theme_index % 4
         self.walls: set[tuple[int,int]]=set()
         self.goal: Optional[tuple[int,int]]
         self.create_map()
@@ -711,10 +694,38 @@ class GameMap:
         for y in range(self.height):
             self.add_wall(0, y)
             self.add_wall(self.width - 1, y)
-        for x in range(8, 13):
-            self.add_wall(x, 3)
-        for x in range(22, 27):
-            self.add_wall(x, 5)
+        if self.theme_index == 0:
+            for x in range(self.width // 5, self.width * 2 // 5):
+                self.add_wall(x, self.height // 3)
+            for x in range(self.width * 3 // 5, self.width * 4 // 5):
+                self.add_wall(x, self.height * 2 // 3)
+        elif self.theme_index == 1:
+            for x in range(self.width // 4, self.width * 3 // 4, 4):
+                for y in range(2, self.height - 2):
+                    if y != self.height // 2:
+                        self.add_wall(x, y)
+        elif self.theme_index == 2:
+            left = self.width // 3
+            right = self.width * 2 // 3
+            top = max(2, self.height // 3 - 1)
+            bottom = min(self.height - 2, self.height * 2 // 3 + 1)
+            for x in range(left, right + 1):
+                self.add_wall(x, top)
+                self.add_wall(x, bottom)
+            for y in range(top, bottom + 1):
+                self.add_wall(left, y)
+                self.add_wall(right, y)
+            self.walls.discard((left, top + 1))
+            self.walls.discard((right, bottom - 1))
+        else:
+            for x, y in (
+                (self.width // 4, self.height // 3),
+                (self.width // 2, self.height // 2),
+                (self.width * 3 // 4, self.height // 3),
+            ):
+                self.add_wall(x, y)
+                self.add_wall(x + 1, y)
+                self.add_wall(x, y + 1)
         self.goal = (self.width - 2, self.height - 2)
 
     def is_in_boundscheck(self, x,y):
@@ -765,6 +776,10 @@ def move_player_by_delta(player, dx, dy, game_map, enemies=None):
                     player.last_message = (
                         f"Wall slam! The {enemy.role} took {player.damage*2} damage and is stunned "
                     )
+                elif enemy.role == "behemoth":
+                    player.last_message = (
+                        "Wall slam! The behemoth is immune to damage, but it is stunned."
+                    )
                 else:
                     player.last_message = (
                         f"Wall slam! The {enemy.role} took 2 damage and is stunned "
@@ -789,6 +804,10 @@ def move_player_by_delta(player, dx, dy, game_map, enemies=None):
             if defeated:
                 player.last_message = (
                     f"Bonk! You pushed the {enemy.role} and defeated it."
+                )
+            elif enemy.role == "behemoth":
+                player.last_message = (
+                    "Bonk! You pushed the behemoth, but it didn't take any damage."
                 )
             else:
                 player.last_message = (
@@ -816,6 +835,8 @@ def move_enemy(enemy,dx,dy,game_map):
 
 def next_path_step(enemy, target, game_map):
     start = (enemy.x, enemy.y)
+    if start == target:
+        return None
     frontier = [(0, start)]
     came_from = {start: None}
     cost = {start: 0}
@@ -868,12 +889,14 @@ def move_basic_enemy(enemy,player,game_map,enemies):
 def use_player_ability(player,abilityname,game_map,enemies):
     ability_name = abilityname.lower()
 
-    if ability_name == "vroomvroom":
-        return player.use_vroomvroom(game_map, enemies)
-    if ability_name == "confetti":
+    if ability_name in ("zoomies", "dash") and player.ability == "zoomies":
+        return player.use_zoomies(game_map, enemies)
+    if ability_name in ("confetti", "confetti cannon") and player.ability == "confetti cannon":
         return player.use_confetti(game_map, enemies)
-    if ability_name in ("second wind", "secondwind"):
+    if ability_name in ("second wind", "secondwind") and player.ability == "second wind":
         return player.use_second_wind()
+
+    player.last_message = "That ability does not belong to this class."
 
     return False
 
@@ -883,7 +906,25 @@ def is_adjacent(first, second):
 
 
 def check_player_enemy_collision(player,enemies):
-    pass
+    for enemy in enemies:
+        if not enemy.alive or enemy.stunned or enemy.burrowed:
+            continue
+
+        if enemy.role == "teleporter":
+            touching = max(
+                abs(enemy.x - player.x),
+                abs(enemy.y - player.y),
+            ) == 1
+        elif enemy.role == "worm":
+            touching = any(
+                abs(x - player.x) + abs(y - player.y) == 1
+                for x, y in worm_cells(enemy)
+            )
+        else:
+            touching = is_adjacent(enemy, player)
+
+        if touching:
+            enemy.attack(player)
    
 def check_goal_reached(player,game_map):
     if game_map.goal is None:
@@ -896,13 +937,14 @@ class Game:
         self.game_map = GameMap()
 
         self.player = Player(x=1, y=1, playerequippedclass=None)
-        self.character_key = "scout"
+        self.character_key = "zoomie"
+        self.upgrade_level = 0
 
         self.enemies = []
         self.round_number = 1
         self.round_won = False
         self.running = True
-        self.end_reason = ""
+        self.upgrade_message = ""
 
     def setup(self):
         self.choose_character()
@@ -917,17 +959,17 @@ class Game:
                 f"{loadout['description']}"
             )
         while True:
-            choice = input("Character (scout/guardian/medic): ").strip().lower()
+            choice = input("Class (zoomie/bonker/medic): ").strip().lower()
             if choice in CHARACTER_LOADOUTS:
                 self.character_key = choice
                 return
-            print("Please choose scout, guardian, or medic.")
+            print("Please choose zoomie, bonker, or medic.")
 
     def setup_round(self, round_number):
         self.round_number = round_number
         width = WIDTH + (round_number - 1) * 4
         height = HEIGHT + (round_number - 1) * 2
-        self.game_map = GameMap(width, height)
+        self.game_map = GameMap(width, height, round_number - 1)
         loadout = CHARACTER_LOADOUTS[self.character_key]
         self.player = Player(
             x=1,
@@ -940,8 +982,8 @@ class Game:
             ability=loadout["ability"],
             playerequippedclass=loadout["display_name"],
         )
-        self.player.vroomvroom_available = loadout["ability"] == "vroomvroom"
-        self.player.confetti_available = loadout["ability"] == "confetti"
+        self.player.zoomies_available = loadout["ability"] == "zoomies"
+        self.player.confetti_cannon_available = loadout["ability"] == "confetti cannon"
         self.player.second_wind_available = loadout["ability"] == "second wind"
         self.enemies = []
         self.turn_number = 0
@@ -1009,47 +1051,120 @@ class Game:
             return
         self.round_won = False
         print("\nYou heal completely between rounds.")
-        self.choose_character()
+        max_hp = self.player.max_hp
+        damage = self.player.damage
         self.setup_round(self.round_number + 1)
+        self.player.max_hp = max_hp
+        self.player.damage = damage
+        self.apply_round_upgrade()
+        self.player.hp = self.player.max_hp
         print(
-            f"\nRound {self.round_number} begins! "
+            f"\nRound {self.round_number}! "
             "The maze is shifting and more little guys are waiting."
         )
+        print(self.upgrade_message)
+        print(self.filler_text())
         input("Press Enter to continue...")
-        
 
+    def apply_round_upgrade(self):
+        print("\nChoose your upgrade:")
+        print("1. Extra health (+2 maximum HP)")
+        print("2. Bigger bonk (+1 damage)")
+        print("3. Gamble with both (+2 maximum HP, +1 damage, and one extra enemy)")
+        while True:
+            choice = input("Upgrade (1/2/3): ").strip()
+            if choice in ("1", "2", "3"):
+                break
+            print("Please choose 1, 2, or 3.")
+
+        self.upgrade_level += 1
+        if choice in ("1", "3"):
+            self.player.max_hp += 2
+        if choice in ("2", "3"):
+            self.player.damage += 1
+        if choice == "3":
+            self.add_extra_enemy()
+        self.player.hp = self.player.max_hp
+        self.upgrade_message = (
+            "Upgrade applied! Your little guy is stronger and ready for more nonsense."
+        )
+    def add_extra_enemy(self):
+        candidates = [
+            (self.game_map.width // 2, self.game_map.height // 2),
+            (self.game_map.width - 4, 2),
+            (4, self.game_map.height // 2),
+            (self.game_map.width // 2, self.game_map.height - 3),
+        ]
+        occupied = {
+            (enemy.x, enemy.y)
+            for enemy in self.enemies
+            if enemy.alive
+        }
+        position = next(
+            (
+                candidate
+                for candidate in candidates
+                if self.game_map.iswalkable(*candidate)
+                and candidate != (self.player.x, self.player.y)
+                and candidate != self.game_map.goal
+                and candidate not in occupied
+            ),
+            None,
+        )
+        if position is not None:
+            self.enemies.append(Enemy(x=position[0], y=position[1], role="basic"))
+    def filler_text(self):
+        messages = (
+            "Fun Tzu says: the supreme art of war is winning with excellent snacks.",
+            "Keep your friends close and your goobers slightly farther away.",
+            "A journey of a thousand tiles begins with one very small step.",
+            "Do not worry about the maze; worry about becoming maze-proof.",
+            "Lebron James is the goat.",
+            "Hi! I'm Finley, the creator of the game and these filler texts.",
+        )
+        return messages[(self.round_number - 2) % len(messages)]
     def handle_player_input(self, key):
         if key in DIRECTIONS:
             if not move_player(self.player, key, self.game_map, self.enemies):
                 print(self.player.last_message)
+                input("Press Enter to continue...")
                 return False
             else:
                 print(self.player.last_message)
+                input("Press Enter to continue...")
             return True
         if key in ("skip", "wait", "."):
             self.player.last_message = "You wait a turn. The other goobers take theirs."
             print(self.player.last_message)
             return True
-        if key in ("e", "vroomvroom"):
-            if not use_player_ability(self.player,"vroomvroom",self.game_map,self.enemies):
-                print(self.player.last_message or "vroomvroom is unavailable. Move first, then try again.")
+        if key in ("e", "zoomies"):
+            if self.player.ability != "zoomies":
+                print("That ability does not belong to this class.")
+                input("Press Enter to continue...")
+                return False
+            if not use_player_ability(self.player,"zoomies",self.game_map,self.enemies):
+                print(self.player.last_message or "Zoomies is unavailable. Move first, then try again.")
                 return False
             else:
                 print(self.player.last_message)
             input("Press Enter to continue...")
             return True
-        if key in ("c", "confetti"):
-            self.player.confetti_range_visible = True
+        if key in ("c", "confetti", "confetti cannon"):
+            if self.player.ability != "confetti cannon":
+                print("That ability does not belong to this class.")
+                input("Press Enter to continue...")
+                return False
+            self.player.confetti_cannon_range_visible = True
             self.render()
             confirmation = input(
                 "Press Enter to throw confetti, or type q to cancel..."
             ).strip().lower()
             if confirmation in ("q", "cancel"):
-                self.player.confetti_range_visible = False
-                print("Confetti cancelled.")
+                self.player.confetti_cannon_range_visible = False
+                print("Confetti cannon cancelled.")
                 return False
             if not use_player_ability(self.player, "confetti", self.game_map, self.enemies):
-                print(self.player.last_message or "Confetti is unavailable. Wait for it to recharge.")
+                print(self.player.last_message or "Confetti cannon is unavailable. Wait for it to recharge.")
                 return False
             else:
                 print(self.player.last_message)
@@ -1057,13 +1172,18 @@ class Game:
                 return True
 
         if key in ("h", "heal", "second wind"):
+            if self.player.ability != "second wind":
+                print("That ability does not belong to this class.")
+                input("Press Enter to continue...")
+                return False
             if not use_player_ability(self.player, "second wind", self.game_map, self.enemies):
                 print(self.player.last_message)
+                input("Press Enter to continue...")
                 return False
             print(self.player.last_message)
             return True
 
-        print("That is not a valid action. Use w/a/s/d, e (vroomvroom), c (confetti), h (second wind), skip, or quit.")
+        print("That is not a valid action. Use w/a/s/d, e (zoomies), c (confetti cannon), h (second wind), skip, or quit.")
         return False
 
     def update_enemies(self):
@@ -1085,16 +1205,7 @@ class Game:
                     for x, y in worm_cells(enemy)
                 )
             )
-            teleporter_attacking = (
-                enemy.role == "teleporter"
-                and max(
-                    abs(enemy.x - self.player.x),
-                    abs(enemy.y - self.player.y),
-                ) == 1
-            )
             if is_adjacent(enemy, self.player) or worm_attacking:
-                continue
-            if teleporter_attacking:
                 continue
             if enemy.role == "basic":
                 move_basic_enemy(enemy, self.player, self.game_map, self.enemies)
@@ -1114,19 +1225,19 @@ class Game:
         self.turn_number += 1
         check_player_enemy_collision(self.player, self.enemies)
         self.update_enemies()
-        self.turn_number += 1
+        if self.turn_number >= BEHEMOTH_SPAWN_TURN and not self.behemoth_spawned:
+            self.spawn_behemoth()
+        if self.player.zoomies_cooldown > 0:
+            self.player.zoomies_cooldown -= 1
+            if self.player.zoomies_cooldown == 0:
+                self.player.zoomies_available = True
+                self.player.last_message = "Zoomies is recharged! The little legs are ready to get zoomy again."
 
-        if self.player.vroomvroom_cooldown > 0:
-            self.player.vroomvroom_cooldown -= 1
-            if self.player.vroomvroom_cooldown == 0:
-                self.player.vroomvroom_available = True
-                self.player.last_message = "Vroomvroom is recharged! The little legs are ready to get zoomy again."
-
-        if self.player.confetti_cooldown > 0:
-            self.player.confetti_cooldown -= 1
-        if self.player.confetti_cooldown == 0:
-            self.player.confetti_available = True
-            self.player.last_message = "Confetti is ready."
+        if self.player.confetti_cannon_cooldown > 0:
+            self.player.confetti_cannon_cooldown -= 1
+        if self.player.confetti_cannon_cooldown == 0:
+            self.player.confetti_cannon_available = True
+            self.player.last_message = "Confetti cannon is ready."
 
         if self.player.dash_color_turns > 0:
             self.player.dash_color_turns -= 1
@@ -1146,7 +1257,7 @@ class Game:
             return
 
         if check_goal_reached(self.player,self.game_map):
-            print("You reached the goal in round {self.round_number}!")
+            print(f"You reached the goal in round {self.round_number}!")
             input("Press Enter to continue...")
             self.round_won = True
             self.running = False
@@ -1154,37 +1265,34 @@ class Game:
     def render(self):
         print("\n" * 2)
         print(f"Round {self.round_number}/{TOTAL_ROUNDS}")
-        controls = "w/a/s/d | skip/wait | quit"
-        if self.player.ability == "vroomvroom":
-            controls = "w/a/s/d | e (vroomvroom) | " + controls
-        elif self.player.ability == "confetti":
-            controls = "w/a/s/d | c (confetti) | " + controls
+        controls = "wait | quit"
+        if self.player.ability == "zoomies":
+            controls = "w/a/s/d | e (zoomies) | " + controls
+        elif self.player.ability == "confetti cannon":
+            controls = "w/a/s/d | c (confetti cannon) | " + controls
         elif self.player.ability == "second wind":
             controls = "w/a/s/d | h (second wind) | " + controls
         print(f"Character: {self.player.character_name} | Weapon: {self.player.weapon}")
         print(f"Controls: {controls}")
         print(f"HP: {self.player.hp}/{self.player.max_hp} | Damage: {self.player.damage}")
-        if self.player.ability == "second wind":
-            print(f"second wind: {'ready' if self.player.second_wind_available else 'used this round'}")
-        print("Controls: w/a/s/d | e (vroomvroom) | c (confetti) | skip/wait | quit")
-        print(f"HP: {self.player.hp}")
-        if self.player.vroomvroom_available:
-            vroomvroom_status = "ready"
-        else:
-            vroomvroom_status = f"recharging ({self.player.vroomvroom_cooldown} turns)"
-        print(f"vroomvroom: {vroomvroom_status}")
-        if self.player.confetti_available:
-            confetti_status = "ready"
-        else:
-            confetti_status = f"recharging ({self.player.confetti_cooldown} turns)"
-        print(f"confetti: {confetti_status}")
+        if self.player.ability == "zoomies":
+            zoomies_status = (
+                "ready"
+                if self.player.zoomies_available
+                else f"recharging ({self.player.zoomies_cooldown} turns)"
+            )
+            print(f"Zoomies: {zoomies_status}")
+        elif self.player.ability == "confetti cannon":
+            confetti_cannon_status = (
+                "ready"
+                if self.player.confetti_cannon_available
+                else f"recharging ({self.player.confetti_cannon_cooldown} turns)"
+            )
+            print(f"Confetti cannon: {confetti_cannon_status}")
         if self.behemoth_spawned:
             behemoth_status = "ACTIVE"
         else:
-            turns_left = max(0, int(BEHEMOTH_SPAWN_TURN - self.turn_number*0.5))
-            #bro something is wrong with the turns left thing it counts down twice
-            #for now ill make the thing count down by 0.5
-            # but i should prolly fix it later
+            turns_left = max(0, BEHEMOTH_SPAWN_TURN - self.turn_number)
             behemoth_status = f"in {turns_left} turns"
         print(f"Behemoth: {behemoth_status}")
         enemies_by_position = {
@@ -1194,7 +1302,7 @@ class Game:
             for x, y in (
                 worm_cells(enemy) if enemy.role == "worm" else {(enemy.x, enemy.y)}
             )        }
-        confetti_area = {
+        confetti_cannon_area = {
             (x, y)
             for x in range(self.player.x - 1, self.player.x + 2)
             for y in range(self.player.y - 1, self.player.y + 2)
@@ -1247,8 +1355,8 @@ class Game:
                     row.append(f"{PREVIEW_COLOR}?{RESET}")
                 elif position in teleport_warning_area:
                     row.append(f"{ENEMY_COLORS['teleporter']}!{RESET}")
-                elif self.player.confetti_range_visible and position in confetti_area:
-                    row.append(f"{CONFETTI_AREA_COLOR}.{RESET}")
+                elif self.player.confetti_cannon_range_visible and position in confetti_cannon_area:
+                    row.append(f"{confetti_cannon_AREA_COLOR}.{RESET}")
                 elif position in self.game_map.walls:
                     row.append(f"{WALL_COLOR}#{RESET}")
                 elif position == self.game_map.goal:
@@ -1258,7 +1366,7 @@ class Game:
 
             print("".join(row))
 
-        self.player.confetti_range_visible = False
+        self.player.confetti_cannon_range_visible = False
 
     def show_intro(self):
         while True:
@@ -1267,8 +1375,8 @@ class Game:
             print("              GOOBERS")
             print("===================================")
             print("Type \"start\" to play, or type \"lore\" to learn about cool story features.")
-            print("alternatively, input an enemy type.")
-            print("Enemy types: basic, teleporter, spawned, spawner, behemoth")
+            print("Alternatively, enter an enemy type to learn about it.")
+            print("Enemy types: basic, teleporter, spawned, spawner, behemoth, worm")
             choice = input("> ").strip().lower()
 
             if choice == "start":
@@ -1278,14 +1386,15 @@ class Game:
                 print("Armed with nothing but party decorations and your own abilities you have to get to the exit.")
                 print("Reach the O, avoid the other little guys, or evilly push them out of your way.")
                 print("Input an enemy type name for more information on a specific one.")
-                print("Enemy types: basic, teleporter, spawned, spawner, behemoth")
+                print("Enemy types: basic, teleporter, spawned, spawner, behemoth, worm")
                 print("Symbols: P = you, e = enemy, ? = teleport target, # = wall, O = goal.")
-                print("Colors: blue = you, pink = vroomvroom, red = basic, purple = teleporter,")
-                print("green = spawned, orange = spawner, grey = wall, yellow = goal.")
-                print("Abilities: vroomvroom gives your little legs two moves to use after pressing e, while confetti")
-                print("gives a hug to nearby enemies and stuns them for 2 turns and takes 8 turns to recharge.")
-                print("The red dots show where confetti will bonk. Stunned enemies turn white")
-                print("and show the number of tiny stun turns they have left.")
+                print("Colors: blue = you, pink = zoomies, red = basic, purple = teleporter,")
+                print("green = spawned, orange = spawner, dark red = behemoth, magenta = worm,")
+                print("grey = wall, yellow = goal.")
+                print("Abilities: zoomies gives your little legs two moves after pressing e, while confetti cannon")
+                print("stuns nearby enemies for 2 turns, and takes 8 turns to recharge.")
+                print("The red dots show where confetti cannon will hit. Stunned enemies turn white")
+                print("and show the number of stun turns they have left.")
                 input("\nPress Enter to return to the menu...")
             elif choice == "basic":
                 print("\nBasic: just a basic goober who moves toward you.")
@@ -1305,9 +1414,12 @@ class Game:
                     f"{BEHEMOTH_SPAWN_TURN} turns and accelerates every turn."
                 )
                 input("\nPress Enter to return to the menu...")
+            elif choice == "worm":
+                print("\nWorm: a long, burrowing goober that can appear beside you.")
+                input("\nPress Enter to return to the menu...")
             else:
                 print("Please type \"start\", \"lore\", or an enemy type name.")
-                print("Enemy types: basic, teleporter, spawned, spawner, behemoth")
+                print("Enemy types: basic, teleporter, spawned, spawner, behemoth, worm")
                 input("> ")
 
     def show_end(self):
